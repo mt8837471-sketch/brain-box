@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000"><meta name="description" content="Генератор случайных тем для часового самостоятельного изучения">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BRAIN BOX"><meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>BRAIN BOX</title>
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:#000;color:#fff;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-tap-highlight-color:transparent}
+button{touch-action:manipulation;font:inherit;color:#888;background:none;border:1px solid #333;padding:.45em .9em;cursor:pointer}
+button:hover,button.on{color:#fff;border-color:#888}
+.top,.bot{position:fixed;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 20px) 24px 20px;font-size:13px;color:#888}
+.top b{letter-spacing:.3em;font-weight:500;color:#fff;font-size:12px}
+.bot{bottom:0;top:auto;padding:20px 24px calc(env(safe-area-inset-bottom,0px) + 20px)}
+#c{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:90px 28px;text-align:center}
+#t{max-width:760px}
+#t h1{font-weight:400;font-size:clamp(24px,4.6vw,46px);line-height:1.25}
+#t p{color:#888;margin-top:20px;font-size:clamp(14px,2vw,17px);line-height:1.5}
+#t .m{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#666;margin:0 0 22px}
+.act{margin-top:28px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.act button{font-size:12px}
+.spin h1{color:#555}
+#go{display:none}
+@media(hover:none){#go{display:block}#hint{display:none}}
+.ov{position:fixed;inset:0;background:#000;display:none;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 20px) 24px 24px;overflow:auto;z-index:5}
+.ov.open{display:flex}.ov>div{max-width:720px;width:100%;margin:0 auto}
+.hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-size:13px;color:#888}
+input{width:100%;background:#000;color:#fff;border:1px solid #333;padding:.7em;font:inherit;margin-bottom:12px}
+.row{padding:12px 0;border-top:1px solid #1a1a1a;cursor:pointer;color:#bbb;font-size:15px;display:flex;justify-content:space-between;gap:12px}
+.row:hover{color:#fff}.row small{color:#666;white-space:nowrap}
+.tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.hi{font-size:12px;color:#666;margin-top:3px}
+.st{font-size:12px;color:#888;margin:0 0 14px}
+</style></head><body>
+<div class="top"><b>BRAIN BOX</b><span id="cur">Все категории</span></div>
+<div id="c"><div id="t"><p id="empty">Нажми SPACE, чтобы получить тему</p></div></div>
+<div class="bot"><button id="bc">Категория</button><button id="go">Получить тему</button><span id="hint">Нажми SPACE, чтобы получить тему</span><button id="bh">История</button></div>
+<div class="ov" id="oc"><div><div class="hd"><span>Категория</span><button data-x>Закрыть</button></div><input id="q" placeholder="Поиск категории" autocomplete="off"><div id="cl"></div></div></div>
+<div class="ov" id="oh"><div><div class="hd"><span>История</span><button data-x>Закрыть</button></div><div class="st" id="stat"></div><div class="tabs" id="tabs"></div><div id="hl"></div></div></div>
+<script src="data.js"></script>
+<script>
+(function(){
+var K='brainbox.v1',S;
+try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
+S=S||{hist:[],fav:[],cat:null};
+var REN={"Мифология и фольклор|Монолит героя: теория путешествия героя Кэмпбелла": "Мифология и фольклор|Мономиф Кэмпбелла: теория путешествия героя", "Логика и теория аргументации|Критика мышления: эвристика доступности и мотивированное рассуждение": "Логика и теория аргументации|Мотивированное рассуждение и эвристика доступности", "Предпринимательство и бизнес|Принцип Парето и управление приоритетами": "Предпринимательство и бизнес|Степенные законы и распределение Парето в экономике и обществе", "Кибербезопасность|Управление паролями и многофакторная аутентификация": "Кибербезопасность|Модели аутентификации: от паролей до passkeys", "Финансы|Сложный процент и временная стоимость денег": "Финансы|Дисконтирование и оценка стоимости активов", "Демография|Старение населения и экономические последствия": "Демография|Демографический дивиденд и окно возможностей", "Демография|Урбанизация и население городов": "Демография|Миграция из села в город: модель Харриса-Тодаро", "Военная история и стратегия|Ядерная стратегия и теория сдерживания": "Военная история и стратегия|Маневренная война и блицкриг"};
+S.hist.forEach(function(h){if(REN[h.id])h.id=REN[h.id]});S.fav=S.fav.map(function(i){return REN[i]||i});
+function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
+var $=function(i){return document.getElementById(i)},ST={new:'новая',learning:'изучаю',done:'изучена',skipped:'пропущена'};
+var all=[];Object.keys(CATS).forEach(function(c){CATS[c].forEach(function(r){all.push({id:c+'|'+r[0],c:c,t:r[0],s:r[1],l:r[2],a:r[3]})})});
+var byId={};all.forEach(function(x){byId[x.id]=x});
+var cur=null,busy=false,filt='all';
+function ent(id){return S.hist.find(function(h){return h.id===id})}
+function pick(){
+ var sc=all.filter(function(x){return !S.cat||x.c===S.cat});
+ var seen={},done={};S.hist.forEach(function(h){seen[h.id]=1;if(h.st==='done')done[h.id]=1});
+ var p=sc.filter(function(x){return !seen[x.id]});
+ if(!p.length)p=sc.filter(function(x){return !done[x.id]&&(!cur||x.id!==cur.id)});
+ if(!p.length)return null;
+ var r=new Uint32Array(1);crypto.getRandomValues(r);return p[r[0]%p.length];
+}
+function show(x){
+ var e=ent(x.id),f=S.fav.indexOf(x.id)>-1,t=$('t');
+ t.className='';t.innerHTML='';
+ function el(tag,txt,cls){var n=document.createElement(tag);n.textContent=txt;if(cls)n.className=cls;t.appendChild(n);return n}
+ el('p',x.c+' · '+x.s+' · '+LEVELS[x.l]+' · 60 мин','m');
+ el('h1',x.t);el('p',x.a);
+ var a=document.createElement('div');a.className='act';t.appendChild(a);
+ function b(txt,fn,on){var n=document.createElement('button');n.textContent=txt;if(on)n.className='on';n.onclick=fn;a.appendChild(n)}
+ b(f?'В избранном':'В избранное',function(){var i=S.fav.indexOf(x.id);i>-1?S.fav.splice(i,1):S.fav.push(x.id);save();show(x)},f);
+ b('Изучаю',function(){setSt(x,'learning')},e&&e.st==='learning');
+ b('Изучена',function(){setSt(x,'done')},e&&e.st==='done');
+ b('Пропустить',function(){setSt(x,'skipped');next()});
+}
+function setSt(x,s){var e=ent(x.id);if(e){e.st=s;save();show(x)}}
+function next(){
+ if(busy||anyOpen())return;
+ var x=pick();
+ if(!x){$('t').innerHTML='<p>В этой категории всё изучено или пропущено.</p>';cur=null;return}
+ busy=true;var t=$('t'),n=0,pool=all.filter(function(y){return !S.cat||y.c===S.cat});
+ t.className='spin';
+ var iv=setInterval(function(){t.innerHTML='';var h=document.createElement('h1');h.textContent=pool[Math.floor(Math.random()*pool.length)].t;t.appendChild(h);
+  if(++n>9){clearInterval(iv);busy=false;cur=x;
+   S.hist.unshift({id:x.id,d:new Date().toISOString(),st:'new'});save();show(x)}},70);
+}
+function anyOpen(){return document.querySelector('.ov.open')}
+function close(){document.querySelectorAll('.ov').forEach(function(o){o.classList.remove('open')});if(document.activeElement&&document.activeElement.blur)document.activeElement.blur()}
+document.addEventListener('keydown',function(e){
+ if(e.key==='Escape')close();
+ if(e.code!=='Space')return;
+ var t=e.target.tagName;if(t==='INPUT'||t==='TEXTAREA'||t==='BUTTON')return;
+ e.preventDefault();next();
+});
+$('go').onclick=next;
+document.querySelectorAll('[data-x]').forEach(function(b){b.onclick=close});
+function cats(){
+ var q=$('q').value.toLowerCase(),L=$('cl');L.innerHTML='';
+ function row(name,key,n){var d=document.createElement('div');d.className='row';
+  d.innerHTML='<span></span><small></small>';d.firstChild.textContent=name;d.lastChild.textContent=n;
+  d.onclick=function(){S.cat=key;save();$('cur').textContent=name;close()};L.appendChild(d)}
+ if(!q||'все категории'.indexOf(q)>-1)row('Все категории',null,all.length);
+ Object.keys(CATS).filter(function(c){return CATS[c].length&&c.toLowerCase().indexOf(q)>-1}).forEach(function(c){row(c,c,CATS[c].length)});
+}
+$('bc').onclick=function(){$('q').value='';cats();$('oc').classList.add('open');setTimeout(function(){$('q').focus()},50)};
+$('q').oninput=cats;
+function hist(){
+ var st={};S.hist.forEach(function(h){var x=byId[h.id];if(x){st[x.c]=st[x.c]||{n:0,d:0};st[x.c].n++;if(h.st==='done')st[x.c].d++}});
+ var done=S.hist.filter(function(h){return h.st==='done'}).length;
+ $('stat').textContent='Выпало: '+S.hist.length+' · Изучено: '+done+' · Избранное: '+S.fav.length+(Object.keys(st).length?' — '+Object.keys(st).map(function(c){return c+' '+st[c].d+'/'+st[c].n}).join('; '):'');
+ var T=$('tabs');T.innerHTML='';
+ [['all','Все'],['fav','Избранное'],['new','Новые'],['learning','Изучаю'],['done','Изучены'],['skipped','Пропущены']].forEach(function(f){
+  var b=document.createElement('button');b.textContent=f[1];if(filt===f[0])b.className='on';b.onclick=function(){filt=f[0];hist()};T.appendChild(b)});
+ var L=$('hl');L.innerHTML='';
+ S.hist.filter(function(h){return byId[h.id]&&(filt==='all'||(filt==='fav'?S.fav.indexOf(h.id)>-1:h.st===filt))}).forEach(function(h){
+  var x=byId[h.id],d=document.createElement('div');d.className='row';
+  d.innerHTML='<div><div></div><div class="hi"></div></div><small></small>';
+  d.firstChild.firstChild.textContent=x.t;
+  d.firstChild.lastChild.textContent=x.c+' · '+new Date(h.d).toLocaleDateString('ru-RU');
+  d.lastChild.textContent=(S.fav.indexOf(h.id)>-1?'★ ':'')+ST[h.st];
+  d.onclick=function(){cur=x;close();show(x)};L.appendChild(d)});
+}
+$('bh').onclick=function(){hist();$('oh').classList.add('open')};
+if(S.cat&&CATS[S.cat])$('cur').textContent=S.cat;else S.cat=null;
+if('serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('/sw.js');
+})();
+</script></body></html>
